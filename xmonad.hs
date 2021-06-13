@@ -29,7 +29,7 @@ import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.UrgencyHook
 import XMonad.Hooks.Place
-import XMonad.Hooks.EwmhDesktops
+import XMonad.Hooks.EwmhDesktops (ewmh, fullscreenEventHook)
 import XMonad.Hooks.ManageHelpers
 import XMonad.Hooks.SetWMName
 import XMonad.Hooks.FadeInactive
@@ -44,19 +44,21 @@ import XMonad.Layout.Spacing
 import XMonad.Layout.LayoutHints
 import XMonad.Layout.ToggleLayouts
 import XMonad.Layout.Gaps
+import XMonad.Layout.Tabbed
+import XMonad.Layout.Groups.Examples
 
 
 defaults = defaultConfig
         { terminal            = "terminator"
-        , normalBorderColor   = "#232327"
-        , focusedBorderColor  = "#373755"--"#554400"--"#034365"
+        , normalBorderColor   = "#cccccc"
+        , focusedBorderColor  = "#ecbfcc"
         , workspaces          = myWorkspaces
         , modMask             = mod4Mask
         , startupHook         = myStartupHook
         , layoutHook          = myLayoutHook
         , borderWidth         = 1
         , handleEventHook     = fullscreenEventHook
-        } `additionalKeys` myKeys
+        }  `additionalKeysP` myKeysP `additionalKeys` myKeys
 
 myWorkspaces :: [String]
 
@@ -68,14 +70,24 @@ myStartupHook :: X ()
 
 myStartupHook = setWMName "XMonad"
 
-myLayoutHook = gaps [(U, 17)] $ toggleLayouts (Full) $ smartBorders $
-    resizable ||| resizable' ||| tiled -- ||| spiral (89/144)
+myLayoutHook = gaps [(U, 20)] $ toggleLayouts (Full) $ smartBorders $
+    resizable ||| resizable' ||| tiled
   where
     tiled = avoidStruts $ Mirror $ Tall 1 (3/100) (1/2)
     resizable = avoidStruts $ ResizableTall 1 (3/100) (1/2) []
-    resizable' = let x = 15 in avoidStruts $ spacing x $
+    resizable' = let x = 10 in avoidStruts $ spacing x $
                  gaps [(U, x), (D, x), (R, x), (L, x)] $
                  ResizableTall 1 (3/100) (1/2) []
+
+-- these are for my 40% keyboard:
+myKeysP = [ ("M-q", windows $ W.greedyView "one")
+          , ("M-w", windows $ W.greedyView "two")
+          , ("M-e", windows $ W.greedyView "three")
+          , ("M-r", windows $ W.greedyView "four")
+          , ("M-u", windows $ W.greedyView "seven")
+          , ("M-i", windows $ W.greedyView "eight")
+          , ("M-o", windows $ W.greedyView "nine")
+          ]
 
 myKeys = [ ((mod4Mask, xK_Right), moveTo Next NonEmptyWS)
          , ((mod4Mask, xK_Left), moveTo Prev NonEmptyWS)
@@ -85,29 +97,30 @@ myKeys = [ ((mod4Mask, xK_Right), moveTo Next NonEmptyWS)
          , ((mod4Mask, xK_g), goToSelected defaultGSConfig)
          , ((mod4Mask .|. shiftMask, xK_Right), shiftToNext >> nextWS)
          , ((mod4Mask .|. shiftMask, xK_Left), shiftToPrev >> prevWS)
-         , ((0, 0x1008FF13), spawn "pactl set-sink-volume 1 +3%")
-         , ((0, 0x1008FF11), spawn "pactl set-sink-volume 1 -3%")
-         , ((0, 0x1008FF12), spawn "pactl set-sink-mute 1 toggle")
-         , ((0, 0x1008FF14), spawn "mpc toggle")
-         , ((0, 0x1008FF16), spawn "mpc prev")
-         , ((0, 0x1008FF17), spawn "mpc next")
-         , ((0, 0x1008FF02), spawn "xbacklight -inc 10")
-         , ((0, 0x1008FF03), spawn "xbacklight -dec 10")
-         , ((mod4Mask, xK_p), spawn "dmenu_run -nb \"#10101C\" -fn \"xft:DejaVu Sans:size=9:book:antialias=true\"")
+         , ((0, xF86XK_AudioRaiseVolume), spawn "amixer set Master 5%+")
+         , ((0, xF86XK_AudioLowerVolume), spawn "amixer set Master 5%-")
+         , ((0, xF86XK_AudioMute), spawn "pactl set-sink-mute 1 toggle")
+         , ((0, xK_F5), spawn "pactl set-sink-mute 1 toggle")
+         , ((0, xF86XK_MonBrightnessDown), spawn "xbacklight - 10")
+         , ((0, xF86XK_MonBrightnessUp), spawn "xbacklight + 10")
+         , ((mod4Mask, xK_p), spawn "dmenu_run -nf \"#555555\" -nb \"#ffffff\" -fn \"xft:DejaVu Sans:size=11:book:antialias=true\"")
          , ((mod4Mask, xK_y), spawn "terminator")
-         , ((mod4Mask, xK_c), spawn "chromium")
+         , ((mod4Mask, xK_c), spawn "firefox")
+         , ((mod4Mask, xK_f), spawn "firefox")
+         --, ((mod4Mask, xK_Delete), spawn "pgrep -c zoom && killall zoom") -- || zoom")
+         , ((mod4Mask, xK_Delete), spawn "/home/sleeping/.xmonad/zoom.sh")
          , ((controlMask, xK_Print), spawn "sleep 0.2; scrot `date +%s`.png -s -z -e 'mv $f ~/screenshots'")
          , ((0, xK_Print), spawn "scrot `date +%s`.png -z -e 'mv $f ~/screenshots'")
          ]
 
 -- colors
 
-xmobarFg    = "#bbbbdd"--"#cc9933"
-xmobarBg    = "#10101c"
-blockColor  = "#23233a"
-myColor     = "#9999ff"
-iconColor   = "#7777cc"
-aaaaaa      = "#aaaac0"
+xmobarFg    = "#222222"
+xmobarBg    = "#cacaca"
+blockColor  = "#ffffff"
+myColor     = "#ba4e9f"
+iconColor   = "#666666"
+aaaaaa      = "#333333" -- text in the blocks
 
 -- icons
 
@@ -131,23 +144,24 @@ xmobarCommands = [ xmobarColor myColor blockColor "<fn=2>%kbd%</fn>"
                  , colorIcon "spkr.xbm" ++ " %vol%"
                  , colorIcon "cpu.xbm" ++ "%cpu%"
                  , colorIcon "battery.xbm" ++ " %battery%"
-                 , xmobarColor myColor blockColor "IPv4" ++ " %network%"
+                 , colorIcon "wifi.xbm" ++ " %network%"
                  , xmobarColor aaaaaa blockColor "%date%"
-                 , xmobarColor "#ddddee" blockColor "%time%"
+                 , xmobarColor aaaaaa blockColor "%time%"
                  ]
 
 xmobarRight = (foldl (++) "" . map rightBlock') xmobarCommands
     where rightBlock' = rightBlock blockColor xmobarBg aaaaaa
-xmobarTemplate = "%StdinReader% }{ %music%  " ++ xmobarRight
+xmobarTemplate = "%StdinReader% }{ " ++ xmobarRight ++ " "
 xmobarPipe = "/usr/bin/xmobar -t \"" ++ xmobarTemplate ++ "\" ~/.xmonad/xmobar.hs"
 
 -- main
 
 main = spawnPipe xmobarPipe >>= \xmproc ->
-    xmonad $ defaults {
-        logHook =  dynamicLogWithPP $ defaultPP
+    xmonad -- $ ewmh -- support for NET_ACTIVE_WINDOW
+           $ defaults {
+        logHook =  dynamicLogWithPP $ def
           { ppOutput    = System.IO.hPutStrLn xmproc
-          , ppTitle     = xmobarColor xmobarFg "" . shorten 70
+          , ppTitle     = xmobarColor xmobarFg "" . shorten 130
           , ppCurrent   = leftBlock blockColor xmobarBg myColor
           , ppHidden    = leftBlock blockColor xmobarBg aaaaaa
           , ppVisible   = leftBlock blockColor xmobarBg "#ffffff"
