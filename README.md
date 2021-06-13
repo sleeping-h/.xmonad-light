@@ -1,2 +1,3 @@
-# .xmonad-light
+# xmonad + xmobar
 light mode config
+![screenshot](all.png)
